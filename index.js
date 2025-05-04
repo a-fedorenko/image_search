@@ -12,21 +12,25 @@ form.addEventListener('submit', (e) => {
     getData(search);
 });
 
-async function getData(query) {
-    try {
-        loader.style.display = 'flex';
-        const response = await fetch(`https://pixabay.com/api/?key=50083392-ca7a042b60b5f81ae001ddb50&q=${query}&image_type=photo&orientation=horizontal&safesearch=true`);
-        
-        if (!response.ok) {
-            throw new Error(`Response status: ${response.status}`);
-        }
-
-        const json = await response.json();
-
-        createList(json.hits);
-    } catch (error) {
-        console.error(error.message);
-    }
+function getData(query) {
+    loader.style.display = 'flex';
+    
+    fetch(`https://pixabay.com/api/?key=50083392-ca7a042b60b5f81ae001ddb50&q=${query}&image_type=photo&orientation=horizontal&safesearch=true`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(json => {
+            createList(json.hits);
+        })
+        .catch(error => {
+            iziToast.error({
+                title: 'Error',
+                message: error.message
+            });
+        });
 }
 
 function createList(data) {
@@ -34,11 +38,13 @@ function createList(data) {
         iziToast.error({
             title: 'Hello',
             message: 'Sorry, there are no images matching your search query. Please try again!'
-        })
+        });
         return;
     }
+
+    const fragment = document.createDocumentFragment();
     
-    data.forEach(({ id, webformatURL, largeImageURL, likes, views, comments, downloads, tags }) => {
+    const markup = data.forEach(({ id, webformatURL, largeImageURL, likes, views, comments, downloads, tags }) => {
         const liItem = document.createElement('li');
         liItem.innerHTML = `<a href="${largeImageURL}"><img class="gallery-img" id="${id}" src="${webformatURL}" alt="${tags}"/></a>
         <ul class="gallery-item-info">
@@ -48,8 +54,11 @@ function createList(data) {
             <li class="info-item"><b>Downloads</b><span>${downloads}</span></li>
         </ul>`;
         liItem.classList.add('gallery');
-        list.appendChild(liItem);
+        
+        fragment.appendChild(liItem);
     });
+
+    list.appendChild(fragment);
 
     addLoghtBox();
 
